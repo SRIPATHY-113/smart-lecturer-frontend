@@ -1,1 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Lecturer Analysis System</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 1.5rem;
+        }
+
+        h1 { margin: 0 0 0.5rem 0; font-size: 2.25rem; color: #fff; }
+        .subtitle { color: var(--text-muted); margin: 0; }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            background-color: #0f172a;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus {
+            outline: 2px solid var(--accent);
+            border-color: transparent;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover { background-color: var(--accent-hover); }
+
+        .status-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-left: 4px solid var(--accent);
+            padding-left: 1rem;
+        }
+
+        .status-badge {
+            background-color: #334155;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-running { border-left-color: #eab308; }
+        .status-done { border-left-color: var(--success); }
+        .status-error { border-left-color: var(--error); }
+
+        .progress-bar-container {
+            background-color: #334155;
+            border-radius: 9999px;
+            height: 8px;
+            margin-top: 1rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            background-color: var(--accent);
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        #log-message {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🎓 Smart Lecturer Analysis Dashboard</h1>
+            <p class="subtitle">Multi-modal AI Pipeline: Slide Extraction, Whisper Transcription & Semantic Querying</p>
+        </header>
+
+        <div class="card">
+            <h3>Process New Lecture Video</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: -0.5rem;">Provide a valid public YouTube lecture video URL link to execute orchestration.</p>
+            <div class="input-group">
+                <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
+                <button onclick="startPipeline()">Analyze Video</button>
+            </div>
+        </div>
+
+        <div class="card id="monitor-card">
+            <div class="status-box" id="statusBox">
+                <div>
+                    <h3 style="margin: 0 0 0.25rem 0;">Pipeline Tracking Monitor</h3>
+                    <div id="log-message">System is currently sitting idle. Awaiting action request...</div>
+                </div>
+                <span class="status-badge" id="statusBadge">Idle</span>
+            </div>
+            <div class="progress-bar-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pointing cleanly to your live operational cloud API engine endpoint
+        const API_BASE_URL = "https://yhtapirs-smart-lecturer-backend.hf.space";
+
+        async function startPipeline() {
+            const urlInput = document.getElementById('youtubeUrl').value.trim();
+            if (!urlInput) {
+                alert("Error: Please provide a valid YouTube URL first!");
+                return;
+            }
+
+            const logMsg = document.getElementById('log-message');
+            const badge = document.getElementById('statusBadge');
+            logMsg.innerText = "Initializing connection parameters and alerting cloud engine...";
+            badge.innerText = "Connecting";
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/process`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlInput })
+                });
+                
+                const data = await response.json();
+                if (response.status === 200 || response.status === 202) {
+                    alert("🎉 Success: Pipeline started smoothly on Hugging Face!");
+                } else {
+                    alert("Notice: " + (data.error || "Unexpected response profile."));
+                }
+                pollStatus();
+            } catch (err) {
+                console.error(err);
+                alert("Network Error: Unable to make contact with your cloud server. Verify your backend Space status badge is green.");
+                logMsg.innerText = "Connection failed.";
+                badge.innerText = "Error";
+            }
+        }
+
+        async function pollStatus() {
+            const badge = document.getElementById('statusBadge');
+            const logMsg = document.getElementById('log-message');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const statusBox = document.getElementById('statusBox');
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/status`);
+                const data = await res.json();
+                
+                // Set text data definitions
+                badge.innerText = data.status;
+                logMsg.innerText = data.message || "Processing calculations...";
+                
+                // Clear out previous style status rules
+                statusBox.className = "status-box";
+                
+                if (data.status === "running") {
+                    statusBox.classList.add("status-running");
+                    progressContainer.style.display = "block";
+                    progressBar.style.width = `${data.progress}%`;
+                    badge.style.backgroundColor = "#eab308";
+                    badge.style.color = "#000";
+                } else if (data.status === "done") {
+                    statusBox.classList.add("status-done");
+                    progressBar.style.width = "100%";
+                    badge.style.backgroundColor = var(--success);
+                    badge.style.color = "#fff";
+                } else if (data.status === "error") {
+                    statusBox.classList.add("status-error");
+                    badge.style.backgroundColor = var(--error);
+                    badge.style.color = "#fff";
+                    logMsg.innerText = `Pipeline Error Profile: ${data.error}`;
+                } else {
+                    progressContainer.style.display = "none";
+                    badge.style.backgroundColor = "#334155";
+                    badge.style.color = "#fff";
+                }
+            } catch (err) {
+                console.error("Tracking monitoring loop encountered error fetching state metrics:", err);
+            }
+        }
+        
+        // Setup state polling background ticking interval loop (Triggers query check every 4 seconds)
+        setInterval(pollStatus, 4000);
+        // Execute initial load-check check instantly upon dashboard initialization setup frame
+        pollStatus();
+    </script>
+</body>
+</html>
