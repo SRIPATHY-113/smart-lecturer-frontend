@@ -162,38 +162,46 @@
         const API_BASE_URL = "https://yhtapirs-smart-lecturer-backend.hf.space";
 
         async function startPipeline() {
-            const urlInput = document.getElementById('youtubeUrl').value.trim();
-            if (!urlInput) {
-                alert("Error: Please provide a valid YouTube URL first!");
-                return;
-            }
+    let urlInput = document.getElementById('youtubeUrl').value.trim();
+    if (!urlInput) {
+        alert("Error: Please provide a valid YouTube URL first!");
+        return;
+    }
 
-            const logMsg = document.getElementById('log-message');
-            const badge = document.getElementById('statusBadge');
-            logMsg.innerText = "Initializing connection parameters and alerting cloud engine...";
-            badge.innerText = "Connecting";
+    // ── AUTOMATIC LINK SANITIZER ────────────────────────────────────────────
+    // Converts mobile share links (youtu.be/ID) into standard video links so the backend parses it smoothly
+    if (urlInput.includes("youtu.be/")) {
+        const videoId = urlInput.split("youtu.be/")[1].split("?")[0];
+        urlInput = `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/process`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: urlInput })
-                });
-                
-                const data = await response.json();
-                if (response.status === 200 || response.status === 202) {
-                    alert("🎉 Success: Pipeline started smoothly on Hugging Face!");
-                } else {
-                    alert("Notice: " + (data.error || "Unexpected response profile."));
-                }
-                pollStatus();
-            } catch (err) {
-                console.error(err);
-                alert("Network Error: Unable to make contact with your cloud server. Verify your backend Space status badge is green.");
-                logMsg.innerText = "Connection failed.";
-                badge.innerText = "Error";
-            }
+    const logMsg = document.getElementById('log-message');
+    const badge = document.getElementById('statusBadge');
+    logMsg.innerText = "Initializing connection parameters and alerting cloud engine...";
+    badge.innerText = "Connecting";
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/process`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: urlInput })
+        });
+        
+        const data = await response.json();
+        if (response.status === 200 || response.status === 202) {
+            alert("🎉 Success: Pipeline started smoothly on Hugging Face!");
+        } else {
+            alert("Notice: " + (data.error || "Unexpected response profile."));
         }
+        pollStatus();
+    } catch (err) {
+        console.error(err);
+        alert("Network Error: Unable to make contact with your cloud server.");
+        logMsg.innerText = "Connection failed.";
+        badge.innerText = "Error";
+    }
+}
 
         async function pollStatus() {
             const badge = document.getElementById('statusBadge');
